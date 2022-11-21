@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import { ISimpleSwap } from "./interface/ISimpleSwap.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "hardhat/console.sol";
 
 contract SimpleSwap is ISimpleSwap, ERC20 {
     using Math for uint256; // ^0.8 version already pre-check overflow
@@ -20,7 +21,25 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     address public tokenA;
     address public tokenB;
 
-    function swap(address tokenIn, address tokenOut, uint256 amountIn) external override returns (uint256 amountOut) {}
+    function swap(address tokenIn, address tokenOut, uint256 amountIn) external override returns (uint256 amountOut) {
+        require(tokenIn != tokenOut, "SimpleSwap: IDENTICAL_ADDRESS");
+        require(tokenIn == tokenA || tokenIn == tokenB, "SimpleSwap: INVALID_TOKEN_IN");
+        require(tokenOut == tokenA || tokenOut == tokenB, "SimpleSwap: INVALID_TOKEN_OUT");
+        require(amountIn != 0, "SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
+
+        //非整數時有精度問題需修正
+        uint256 reserveACurrent = ERC20(tokenA).balanceOf(address(this));
+        uint256 reserveBCurrent = ERC20(tokenB).balanceOf(address(this));
+        uint256 k = reserveACurrent * reserveBCurrent;
+        amountOut = reserveBCurrent - (k / (reserveACurrent + amountIn));
+        require(amountOut >= 1 * 10 ** 18, "SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");
+
+        ERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
+        ERC20(tokenOut).transfer(msg.sender, amountOut);
+
+        emit Swap(msg.sender, tokenIn, tokenOut, amountIn, amountOut);
+        return amountOut;
+    }
 
     function addLiquidity(
         uint256 amountAIn,
@@ -42,8 +61,8 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             ERC20(tokenA).transferFrom(msg.sender, address(this), actualAmountA);
             ERC20(tokenB).transferFrom(msg.sender, address(this), actualAmountB);
         } else {
-            uint256 proportionTokenA = amountAIn / reserveACurrent;
-            uint256 proportionTokenB = amountBIn / reserveBCurrent;
+            uint256 proportionTokenA = ((amountAIn * type(uint32).max) / reserveACurrent);
+            uint256 proportionTokenB = ((amountBIn * type(uint32).max) / reserveBCurrent);
 
             if (proportionTokenA == proportionTokenB) {
                 actualAmountA = amountAIn;
