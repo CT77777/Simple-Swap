@@ -27,21 +27,23 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         require(tokenOut == tokenA || tokenOut == tokenB, "SimpleSwap: INVALID_TOKEN_OUT");
         require(amountIn != 0, "SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
 
-        uint256 reserveACurrent = ERC20(tokenA).balanceOf(address(this));
-        uint256 reserveBCurrent = ERC20(tokenB).balanceOf(address(this));
-        uint256 k = reserveACurrent * reserveBCurrent;
-        amountOut = (reserveBCurrent * amountIn) / (reserveACurrent + amountIn);
+        uint256 reserveInPre = ERC20(tokenIn).balanceOf(address(this));
+        uint256 reserveOutPre = ERC20(tokenOut).balanceOf(address(this));
+        uint256 k = reserveInPre * reserveOutPre;
+        amountOut = (reserveOutPre * amountIn) / (reserveInPre + amountIn);
         // amountOut = reserveBCurrent - (k / (reserveACurrent + amountIn));
         require(amountOut > 0, "SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");
 
         ERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
         ERC20(tokenOut).transfer(msg.sender, amountOut);
-        uint256 reserveANew = ERC20(tokenA).balanceOf(address(this));
-        uint256 reserveBNew = ERC20(tokenB).balanceOf(address(this));
-        require(reserveANew * reserveBNew >= k, "k value doesn't pass criteria");
+        uint256 reserveInNew = ERC20(tokenIn).balanceOf(address(this));
+        uint256 reserveOutNew = ERC20(tokenOut).balanceOf(address(this));
+        require(reserveInNew * reserveOutNew >= k, "k value doesn't pass criteria");
+        uint256 actualAmountIn = reserveInNew - reserveInPre;
+        uint256 actualAmountOut = reserveOutPre - reserveOutNew;
 
-        emit Swap(msg.sender, tokenIn, tokenOut, amountIn, amountOut);
-        return amountOut;
+        emit Swap(msg.sender, tokenIn, tokenOut, actualAmountIn, actualAmountOut);
+        return actualAmountOut;
     }
 
     function addLiquidity(
