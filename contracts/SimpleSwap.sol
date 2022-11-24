@@ -27,7 +27,6 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         require(tokenOut == tokenA || tokenOut == tokenB, "SimpleSwap: INVALID_TOKEN_OUT");
         require(amountIn != 0, "SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
 
-        //非整數時有精度問題需修正
         uint256 reserveACurrent = ERC20(tokenA).balanceOf(address(this));
         uint256 reserveBCurrent = ERC20(tokenB).balanceOf(address(this));
         uint256 k = reserveACurrent * reserveBCurrent;
