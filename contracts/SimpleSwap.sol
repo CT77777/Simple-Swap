@@ -30,11 +30,15 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         uint256 reserveACurrent = ERC20(tokenA).balanceOf(address(this));
         uint256 reserveBCurrent = ERC20(tokenB).balanceOf(address(this));
         uint256 k = reserveACurrent * reserveBCurrent;
-        amountOut = reserveBCurrent - (k / (reserveACurrent + amountIn));
-        require(amountOut >= 1 * 10 ** 18, "SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");
+        amountOut = (reserveBCurrent * amountIn) / (reserveACurrent + amountIn);
+        // amountOut = reserveBCurrent - (k / (reserveACurrent + amountIn));
+        require(amountOut > 0, "SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");
 
         ERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
         ERC20(tokenOut).transfer(msg.sender, amountOut);
+        uint256 reserveANew = ERC20(tokenA).balanceOf(address(this));
+        uint256 reserveBNew = ERC20(tokenB).balanceOf(address(this));
+        require(reserveANew * reserveBNew >= k, "k value doesn't pass criteria");
 
         emit Swap(msg.sender, tokenIn, tokenOut, amountIn, amountOut);
         return amountOut;
