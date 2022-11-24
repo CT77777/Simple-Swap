@@ -110,6 +110,8 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
 
         emit RemoveLiquidity(msg.sender, actualAmountA, actualAmountB, liquidity);
         emit Transfer(address(this), address(0), liquidity);
+
+        return (actualAmountA, actualAmountB);
     }
 
     function getReserves() external view override returns (uint256 reserveA, uint256 reserveB) {
